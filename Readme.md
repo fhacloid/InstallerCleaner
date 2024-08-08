@@ -2,7 +2,7 @@
 
 This is a Powershell Module meant help to clean up Windows Installer files.
 
-Windows installer keeps a copy of all .msi or .msp files in the C:\Windows\Installer folder.
+Windows installer keeps a copy of all .msi or .msp files in the `C:\Windows\Installer` folder.
 
 Thoses files are used to repair the installation and can take a lot of space on a server.
 
