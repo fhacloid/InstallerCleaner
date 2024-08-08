@@ -2,7 +2,7 @@
 set shell := ["pwsh", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"]
 
 sync:
-  rsync --exclude .git -avr . win-work:~/projects/altavia/windows_installer_cleaner
+  rsync --delete --exclude .git -avr . win-work:~/projects/altavia/windows_installer_cleaner
 
 check: sync
   ssh win-work 'cd "C:\Users\work\projects\altavia\windows_installer_cleaner" ; .\ci\Lint-PSFiles.ps1'

@@ -19,7 +19,7 @@
 
   .EXAMPLE
 
-  Plan-Cleanup.ps1 -WhereObjectFilters $({ $PSItem.Name -notlike "*Microsoft*" }) `
+  Plan-Cleanup -WhereObjectFilters $({ $PSItem.Name -notlike "*Microsoft*" }) `
     -MatchTextFilters "Windows Store", "Office" `
     -ExcludeTextFilters "*.NET*"
 
@@ -27,7 +27,7 @@
 
   # You can pipe directly to apply after
 
-  Plan-Cleanup.ps1 -WhereObjectFilters $({ $PSItem.Name -notlike "*Microsoft*" }) `
+  Plan-Cleanup -WhereObjectFilters $({ $PSItem.Name -notlike "*Microsoft*" }) `
     -MatchTextFilters "Windows Store", "Office" `
     -ExcludeTextFilters "*.NET*" | Apply-Cleanup.ps1
 
@@ -72,60 +72,65 @@
 
 #>
 
-param(
-  [Parameter(Mandatory = $false)]
-  [string[]] $MatchTextFilters,
-
-  [Parameter(Mandatory = $false)]
-  [string[]] $ExcludeTextFilters,
-
-  [Parameter(Mandatory = $false)]
-  [ScriptBlock[]] $WhereObjectFilters
-)
-
-. .\Types.ps1
-. .\Get-Programs.ps1
-
-$InformationPreference = "Continue"
-$ErrorActionPreference = "Stop"
-
-[Program[]] $Programs = Get-Programs
-[Program[]] $ProgramPlan = @()
-
-foreach ($matchFilter in $MatchTextFilters)
+function Plan-Cleanup
 {
-  $ProgramPlan += $Programs | Where-Object Name -like "*$matchFilter*"
-}
+  param(
+    [Parameter(Mandatory = $false)]
+    [string[]] $MatchTextFilters,
 
-foreach ($whereFilter in $WhereObjectFilters)
-{
-  $ProgramPlan = $ProgramPlan | Where-Object -FilterScript $whereFilter
-}
+    [Parameter(Mandatory = $false)]
+    [string[]] $ExcludeTextFilters,
 
-foreach ($excludeFilter in $ExcludeTextFilters)
-{
-  $ProgramPlan = $ProgramPlan | Where-Object Name -NotLike "$excludeFilter"
-}
+    [Parameter(Mandatory = $false)]
+    [ScriptBlock[]] $WhereObjectFilters
+  )
 
-# Display plan
-$DisplayPlan = $ProgramPlan `
+  . .\Types.psm1
+  . .\Get-Programs.psm1
+
+  $InformationPreference = "Continue"
+  $ErrorActionPreference = "Stop"
+
+  [Program[]] $Programs = Get-Programs
+  [Program[]] $ProgramPlan = @()
+
+  foreach ($matchFilter in $MatchTextFilters)
+  {
+    $ProgramPlan += $Programs | Where-Object Name -like "*$matchFilter*"
+  }
+
+  foreach ($whereFilter in $WhereObjectFilters)
+  {
+    $ProgramPlan = $ProgramPlan | Where-Object -FilterScript $whereFilter
+  }
+
+  foreach ($excludeFilter in $ExcludeTextFilters)
+  {
+    $ProgramPlan = $ProgramPlan | Where-Object Name -NotLike "$excludeFilter"
+  }
+
+  # Display plan
+  $DisplayPlan = $ProgramPlan `
 | Format-Table Name, `
-@{Label="Size (MB)"; Expression={[math]::Round($PSItem.Size / 1MB, 2)}}, `
-@{Label="Patch Size (MB)"; Expression={[math]::Round($PSItem.PatchSize / 1MB, 2) } }
+  @{Label="Size (MB)"; Expression={[math]::Round($PSItem.Size / 1MB, 2)}}, `
+  @{Label="Patch Size (MB)"; Expression={[math]::Round($PSItem.PatchSize / 1MB, 2) } }
 
-$TotalSize = $($ProgramPlan | Measure-Object -Property Size -Sum).Sum + $($ProgramPlan | Measure-Object -Property PatchSize -Sum).Sum
-if ($TotalSize -gt 1GB)
-{
-  $ScaleText = "GB"
-  $RoundedTotalSize = [math]::Round($TotalSize / 1GB, 2)
-} else
-{
+  $TotalSize = $($ProgramPlan | Measure-Object -Property Size -Sum).Sum + $($ProgramPlan | Measure-Object -Property PatchSize -Sum).Sum
+  if ($TotalSize -gt 1GB)
+  {
+    $ScaleText = "GB"
+    $RoundedTotalSize = [math]::Round($TotalSize / 1GB, 2)
+  } else
+  {
 
-  $RoundedTotalSize = [math]::Round($TotalSize / 1MB, 2)
-  $ScaleText = "MB"
+    $RoundedTotalSize = [math]::Round($TotalSize / 1MB, 2)
+    $ScaleText = "MB"
+  }
+
+  $DisplayPlan | Out-Host
+  "Total to be freed: $RoundedTotalSize $ScaleText" | Out-Host
+
+  return $ProgramPlan
 }
 
-$DisplayPlan | Out-Host
-"Total to be freed: $RoundedTotalSize $ScaleText" | Out-Host
-
-return $ProgramPlan
+Export-ModuleMember -Function Plan-Cleanup

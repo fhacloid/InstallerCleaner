@@ -17,41 +17,46 @@
 
   .EXAMPLE
 
-  Plan-Cleanup.ps1 | .\Apply-Cleanup.ps1 -DryRun
+  Plan-Cleanup | .\Apply-Cleanup -DryRun
 #>
 
-. .\Types.ps1
-
-params (
-  [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-  [Program[]] $ProgramsToDelete,
-
-  [Parameter(Mandatory = $false)]
-  [System.Diagnostics.BooleanSwitch] $DryRun = $false
-)
-
-# Define delete command to be real or not
-# depending on the -DryRun switch
-$DeleteCommand = if ($DryRun)
+function Apply-Cleanup
 {
-  { Param($Item) Write-Host "Would have removed $Item" }
-} else
-{
+  . .\Types.psm1
+
+  params (
+    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+    [Program[]] $ProgramsToDelete,
+
+    [Parameter(Mandatory = $false)]
+    [System.Diagnostics.BooleanSwitch] $DryRun = $false
+  )
+
+  # Define delete command to be real or not
+  # depending on the -DryRun switch
+  $DeleteCommand = if ($DryRun)
   {
-    Param($Item)
-    Write-Host "Removing $Item"
-    # Remove-Item -Path $Item -Force
+    { Param($Item) Write-Host "Would have removed $Item" }
+  } else
+  {
+    {
+      Param($Item)
+      Write-Host "Removing $Item"
+      # Remove-Item -Path $Item -Force
+    }
+  }
+
+  # Execution
+  foreach ($ProgramToDelete in $ProgramsToDelete)
+  {
+    Write-Host "Cleaning $($ProgramToDelete.Name) patches."
+    foreach ($Patch in $ProgramToDelete.Patches)
+    {
+      Invoke-Expression -Command $DeleteCommand -ArgumentList $Patch.LocalPackage
+    }
+
+    Invoke-Expression -Command $DeleteCommand -ArgumentList $ProgramToDelete.LocalPackage
   }
 }
 
-# Execution
-foreach ($ProgramToDelete in $ProgramsToDelete)
-{
-  Write-Host "Cleaning $($ProgramToDelete.Name) patches."
-  foreach ($Patch in $ProgramToDelete.Patches)
-  {
-    Invoke-Expression -Command $DeleteCommand -ArgumentList $Patch.LocalPackage
-  }
-
-  Invoke-Expression -Command $DeleteCommand -ArgumentList $ProgramToDelete.LocalPackage
-}
+Export-ModuleMember -Function Apply-Cleanup

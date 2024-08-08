@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-. .\Types.ps1
+. .\Types.psm1
 
 function Get-Programs
 {

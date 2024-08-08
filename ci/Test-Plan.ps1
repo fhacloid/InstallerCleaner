@@ -33,4 +33,5 @@ $Params = @{
   )
 }
 
-.\module\Apply-Cleanup.psm1 -DryRun -ProgramsToDelete $(.\module\Plan-Cleanup.psm1 @Params )
+Import-Module -Name ./module/InstallerCleaner.psm1
+Apply-Cleanup -DryRun -ProgramsToDelete $(Plan-Cleanup @Params )
