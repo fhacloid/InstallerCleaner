@@ -22,5 +22,5 @@ $settings = @{
 
 Get-ChildItem ./module/*.psm1 | ForEach-Object {
   Write-Host "Linting $($PSItem.Name)."
-  Invoke-ScriptAnalyzer -Path "module/$($PSItem.Name)" -Settings $settings
+  Invoke-ScriptAnalyzer -Path "module/$($PSItem.Name)" -Settings $settings -Severity @("Error")
 }
