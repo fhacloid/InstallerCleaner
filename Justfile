@@ -25,6 +25,11 @@ check:
 test: check
   .\Procedure.ps1
 
+commit:
+  git add .
+  git commit -m "Update files"
+  git push origin main
+
 watch +command:
   watchexec -w . -e Justfile -e ps1 -c -r just {{command}}
 
