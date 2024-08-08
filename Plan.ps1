@@ -1,16 +1,16 @@
+. .\Types.ps1
+. .\Get-Programs.ps1
+
 $DebugPreference = "Continue"
 $InformationPreference = "Continue"
 $ErrorActionPreference = "Stop"
 
-# For now, we will read from csv
+# [Program[]] $Programs = Get-Content -Path ./programs.csv | ConvertFrom-Csv
+# [Patch[]] $Patches = Get-Content -Path ./patches.csv | ConvertFrom-Csv
+#
+[Program[]] $Programs = Get-Programs
 
-$Programs = Get-Content -Path ./programs.csv | ConvertFrom-Csv
-$Patches = Get-Content -Path ./patches.csv | ConvertFrom-Csv
-
-$Programs[0] | Out-Host
-$Patches[0] | format-list | Out-Host
-
-$Whitelist = @(
+$TextFilter = @(
   "Windows Store"
   "Windows SDK ARM64"
   "Microsoft Visual C++"
@@ -30,20 +30,46 @@ $Whitelist = @(
   "Microsoft X"
   "Microsoft DCF"
   "MSI Development Tools"
+  "Alacritty"
+  "Python"
+)
+
+$WhereFilter = $(
+  { $PSItem.DisplayName -notlike "*Microsoft*" }
 )
 
 
-$ProgramsToClean = $Programs `
-| Where-Object DisplayName -ne "" `
-| Select-Object DisplayName,InstallLocation,LocalPackage `
-| Where-Object {
-  foreach ($filter in $Whitelist)
-  {
-    $PSItem.DisplayName -like "*$filter*"
-  }
+$ProgramsToClean = @()
+foreach ($filter in $TextFilter)
+{
+  $ProgramsToClean += $Programs | Where-Object DisplayName -like "*$filter*"
+}
+
+foreach ($filter in $WhereFilter)
+{
+  $ProgramsToClean = $ProgramsToClean | Where-Object -FilterScript $filter
 }
 
 # Get sizes
 $ProgramsToClean | ForEach-Object {
-  $PSItem | 
+  $size = Get-Item $PSItem.LocalPackage | Select-Object -Property Length
+  $PSItem.Size = $size.Length
 }
+
+$ProgramsToClean `
+| Format-Table DisplayName, @{Label="Size (MB)"; Expression={[math]::Round($PSItem.Size / 1MB, 2)}} `
+| Out-Host
+
+$TotalSize = $($ProgramsToClean | Measure-Object -Property Size -Sum).Sum
+if ($TotalSize -gt 1GB)
+{
+  $ScaleText = "GB"
+  $RoundedTotalSize = [math]::Round($TotalSize / 1GB, 2)
+} else
+{
+
+  $RoundedTotalSize = [math]::Round($TotalSize / 1MB, 2)
+  $ScaleText = "MB"
+}
+
+Write-Host "Total to be freed: $RoundedTotalSize $ScaleText"

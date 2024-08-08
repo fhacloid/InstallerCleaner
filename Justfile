@@ -1,33 +1,20 @@
 # set shell := ["powershell.exe", "-Version", "3.0", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"]
 set shell := ["pwsh", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"]
 
-check:
-  #! powershell.exe
-  Write-Host "Linting files"
-  $settings = @{
-      Rules = @{
-          PSUseCompatibleSyntax = @{
-              Enable = $true
-              TargetVersions = @(
-                  '3.4'
-                  '5.1'
-              )
-          }
-      }
-  }
+sync:
+  rsync --delete --exclude .git -avr *.ps1 win-work:~/projects/altavia\windows_installer_cleaner
 
-  Import-Module -Name PSScriptAnalyzer
-
-  Get-ChildItem Procedure.ps1 | % {
-    Write-Host "Linting $($PSItem.Name)."
-    Invoke-ScriptAnalyzer -Path $PSItem.Name -Settings $settings
-  }
+check: sync
+  ssh win-work 'cd "C:\Users\work\projects\altavia\windows_installer_cleaner" ; .\ci\Lint-PSFiles.ps1'
 
 test: check
   .\Procedure.ps1
 
 test-plan:
   .\Plan.ps1
+
+test-plan-remote: sync check
+  ssh win-work 'cd "C:\Users\work\projects\altavia\windows_installer_cleaner" ; .\Plan.ps1'
 
 commit:
   git add .
