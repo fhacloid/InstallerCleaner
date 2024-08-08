@@ -20,7 +20,7 @@ $settings = @{
   }
 }
 
-Get-ChildItem *.ps1 | ForEach-Object {
+Get-ChildItem ./module/*.psm1 | ForEach-Object {
   Write-Host "Linting $($PSItem.Name)."
-  Invoke-ScriptAnalyzer -Path $PSItem.Name -Settings $settings | Where-Object RuleName -eq "PSUseCompatibleSyntax"
+  Invoke-ScriptAnalyzer -Path "module/$($PSItem.Name)" -Settings $settings
 }

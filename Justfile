@@ -7,12 +7,6 @@ sync:
 check: sync
   ssh win-work 'cd "C:\Users\work\projects\altavia\windows_installer_cleaner" ; .\ci\Lint-PSFiles.ps1'
 
-test: check
-  .\Procedure.ps1
-
-test-plan:
-  .\Plan.ps1
-
 test-plan-remote: sync check
   ssh win-work 'cd "C:\Users\work\projects\altavia\windows_installer_cleaner" ; .\ci\Test-Plan.ps1'
 
@@ -22,7 +16,7 @@ commit:
   git push origin main
 
 watch +command:
-  watchexec -w . -w Justfile -e ps1 -c -r just {{command}}
+  watchexec -w . -w Justfile -e psm1 -c -r just {{command}}
 
 setup:
   Install-Module -Name PSScriptAnalyzer -Force

@@ -33,4 +33,4 @@ $Params = @{
   )
 }
 
-.\Plan-Cleanup.ps1 @Params | .\Apply-Cleanup.ps1 -DryRun
+.\module\Apply-Cleanup.psm1 -DryRun -ProgramsToDelete $(.\module\Plan-Cleanup.psm1 @Params )

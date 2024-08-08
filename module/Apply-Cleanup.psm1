@@ -24,7 +24,7 @@
 
 params (
   [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-  [params[]] $ProgramsToDelete,
+  [Program[]] $ProgramsToDelete,
 
   [Parameter(Mandatory = $false)]
   [System.Diagnostics.BooleanSwitch] $DryRun = $false
