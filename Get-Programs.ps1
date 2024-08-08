@@ -17,12 +17,12 @@ function Get-Programs
 
 
   $AllPrograms = New-Object System.Collections.Generic.List[Program]
-  $AllPatches = New-Object System.Collections.Generic.List[Patch]
 
   # Retrieve Programs informations
-  $Products.GetEnumerator() | ForEach-Object {
-    $User = $PSItem.Key
-    $Products = $PSItem.Value
+  foreach ($HashItem in $Products.GetEnumerator())
+  {
+    $User = $HashItem.Key
+    $Products = $HashItem.Value
 
     # Get Programs
     foreach ($ProductGUID in $Products)
@@ -44,19 +44,27 @@ function Get-Programs
           $ProgramData.LocalPackage = $InstallProperties.LocalPackage
           $ProgramData.PsPath = $InstallProperties.PSPath
           $ProgramData.PsParentPath = $InstallProperties.PSParentPath
+          $ProgramData.Size = $(Get-ItemPropertyValue -Path $InstallProperties.LocalPackage -Name "Length")
         }
 
         "Patches"
         {
           Write-Debug "Checking $PSItem for $HKey"
           $(Get-ItemProperty -Path "Registry::$HKey\$PSItem").AllPatches | ForEach-Object {
-            # Each PSItem represent a Patch ID
-            # We fetch the propeties in the registry
-            $Patch = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\${User}\Patches\${PSItem}"
-            $ProgramData.Patches += [Path]@{
-              ID = $PSItem
-              LocalPackage = $Patch.LocalPackage
-              PSPath = $Patch.PSPath
+            try
+            {
+              # Each PSItem represent a Patch ID
+              # We fetch the propeties in the registry
+              $Patch = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\${User}\Patches\${PSItem}"
+              $ProgramData.Patches += [Path]@{
+                ID = $PSItem
+                LocalPackage = $Patch.LocalPackage
+                PSPath = $Patch.PSPath
+                Size = $(Get-ItemPropertyValue -Path $Patch.LocalPackage -Name "Length")
+              }
+            } catch [System.Management.Automation.ItemNotFoundException]
+            {
+              # This means this software has no patch, so we do nothing
             }
           }
         }
@@ -66,6 +74,8 @@ function Get-Programs
         }
       }
 
+      # Calculate total patch size
+      $ProgramData.PatchSize = $($ProgramData.Patches | Measure-Object -Property Size -Sum).Sum
       $AllPrograms.Add($ProgramData)
     }
   }
