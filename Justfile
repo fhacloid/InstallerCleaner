@@ -1,4 +1,5 @@
-set shell := ["powershell.exe", "-Version", "3.0", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"]
+# set shell := ["powershell.exe", "-Version", "3.0", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"]
+set shell := ["pwsh", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"]
 
 check:
   #! powershell.exe
@@ -24,6 +25,9 @@ check:
 
 test: check
   .\Procedure.ps1
+
+test-plan:
+  .\Plan.ps1
 
 commit:
   git add .
