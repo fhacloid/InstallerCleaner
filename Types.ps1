@@ -3,6 +3,7 @@ public struct patch {
   public string ID;
   public string LocalPackage;
   public string PSPath;
+  public long Size;
 }
 
 public struct program {
@@ -14,32 +15,33 @@ public struct program {
   public string PsPath;
   public patch[] Patches;
   public long Size;
+  public long PatchSize;
 }
 "@
 
-$PreviousErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-
-# Add types as class for my LSP
-
-class Program
-{
-  [string] $Name
-  [string] $InstallLocation
-  [string] $InstallSource
-  [string] $LocalPackage
-  [string] $PsPath
-  [string] $InstallPropertiesPsPath
-  [string] $Patches
-  [string] $PatchPSPath
-  [long] $Size
-}
-
-class Patch
-{
-  [string] $ID
-  [string] $LocalPackage
-  [string] $PSPath
-}
-
-$ErrorActionPreference = $PreviousErrorActionPreference
+# $PreviousErrorActionPreference = $ErrorActionPreference
+# $ErrorActionPreference = "Continue"
+# 
+# # Add types as class for my LSP
+# 
+# class Program
+# {
+#   [string] $Name
+#   [string] $InstallLocation
+#   [string] $InstallSource
+#   [string] $LocalPackage
+#   [string] $PsPath
+#   [string] $InstallPropertiesPsPath
+#   [string] $Patches
+#   [string] $PatchPSPath
+#   [long] $Size
+# }
+# 
+# class Patch
+# {
+#   [string] $ID
+#   [string] $LocalPackage
+#   [string] $PSPath
+# }
+# 
+# $ErrorActionPreference = $PreviousErrorActionPreference
