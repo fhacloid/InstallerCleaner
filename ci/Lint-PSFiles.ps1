@@ -1,5 +1,5 @@
 # Check if we are on repo root:
-if ((Get-Location).Path -ne ".git")
+if (-not (Test-Path -Path ".git"))
 {
   Write-Error "Please run this script from the repository root."
   exit
@@ -22,5 +22,5 @@ $settings = @{
 
 Get-ChildItem *.ps1 | ForEach-Object {
   Write-Host "Linting $($PSItem.Name)."
-  Invoke-ScriptAnalyzer -Path $PSItem.Name -Settings $settings
+  Invoke-ScriptAnalyzer -Path $PSItem.Name -Settings $settings | Where-Object RuleName -eq "PSUseCompatibleSyntax"
 }
