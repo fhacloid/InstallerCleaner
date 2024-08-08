@@ -1,6 +1,6 @@
 
 $Params = @{
-  MatchTextFilter = @(
+  MatchTextFilters = @(
     "Windows Store"
     "Windows SDK ARM64"
     "Microsoft Visual C++"
@@ -24,15 +24,13 @@ $Params = @{
     "Python"
   )
 
-  WhereObjectFilter = $(
+  WhereObjectFilters = $(
     { $PSItem.Name -notlike "*Microsoft*" }
   )
 
-  ExcludeTextFilter = @(
+  ExcludeTextFilters = @(
     "*Launcher*"
   )
 }
 
-.\Plan-Cleanup.ps1 @Params -ToCsvFile "Plan.csv"
-
-Get-Content -Path "Plan.csv" | Out-Host
+.\Plan-Cleanup.ps1 @Params | .\Apply-Cleanup.ps1 -DryRun

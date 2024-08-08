@@ -1,15 +1,86 @@
+<#
+  .SYNOPSIS
+
+  Fetch the list of programs artefacts from windows installer to be cleaned up.
+
+  Can be filtered with paramters
+
+  .PARAMETER MatchTextFilters
+
+  Filter the list of programs using `-like "*$MatchTextFiler*"` syntax
+
+  .PARAMETER ExcludeTextFilters
+
+  Text match to exclude (can use globs)
+
+  .PARAMETER WhereObjectFilters
+
+  List of scriptblock to filter the list of programs
+
+  .EXAMPLE
+
+  Plan-Cleanup.ps1 -WhereObjectFilters $({ $PSItem.Name -notlike "*Microsoft*" }) `
+    -MatchTextFilters "Windows Store", "Office" `
+    -ExcludeTextFilters "*.NET*"
+
+  .EXAMPLE
+
+  # You can pipe directly to apply after
+
+  Plan-Cleanup.ps1 -WhereObjectFilters $({ $PSItem.Name -notlike "*Microsoft*" }) `
+    -MatchTextFilters "Windows Store", "Office" `
+    -ExcludeTextFilters "*.NET*" | Apply-Cleanup.ps1
+
+  .EXAMPLE
+
+  # Using parameter splattings
+  $Params = @{
+    MatchTextFilters = @(
+      "Windows Store"
+      "Windows SDK ARM64"
+      "Microsoft Visual C++"
+      "Adobe "
+      "Microsoft .NET"
+      "Microsoft Office"
+      "Microsoft Word"
+      "Microsoft Lync"
+      "Microsoft Groove"
+      "Microsoft Publisher"
+      "Microsoft PowerPoint"
+      "Microsoft SharePoint"
+      "Microsoft Excel"
+      "Microsoft Access"
+      "Microsoft InfoPath"
+      "Microsoft OneNote"
+      "Microsoft X"
+      "Microsoft DCF"
+      "MSI Development Tools"
+      "Alacritty"
+      "Python"
+    )
+
+    WhereObjectFilters = $(
+      { $PSItem.Name -notlike "*Microsoft*" }
+    )
+
+    ExcludeTextFilters = @(
+      "*Launcher*"
+    )
+  }
+
+  Plan-Cleanup.ps1 @Params
+
+#>
+
 param(
   [Parameter(Mandatory = $false)]
-  [string[]] $MatchTextFilter,
+  [string[]] $MatchTextFilters,
 
   [Parameter(Mandatory = $false)]
-  [string[]] $ExcludeTextFilter,
+  [string[]] $ExcludeTextFilters,
 
   [Parameter(Mandatory = $false)]
-  [ScriptBlock[]] $WhereObjectFilter,
-
-  [Parameter(Mandatory = $false)]
-  [string] $ToCsvFile
+  [ScriptBlock[]] $WhereObjectFilters
 )
 
 . .\Types.ps1
@@ -21,17 +92,17 @@ $ErrorActionPreference = "Stop"
 [Program[]] $Programs = Get-Programs
 [Program[]] $ProgramPlan = @()
 
-foreach ($matchFilter in $MatchTextFilter)
+foreach ($matchFilter in $MatchTextFilters)
 {
   $ProgramPlan += $Programs | Where-Object Name -like "*$matchFilter*"
 }
 
-foreach ($whereFilter in $WhereObjectFilter)
+foreach ($whereFilter in $WhereObjectFilters)
 {
   $ProgramPlan = $ProgramPlan | Where-Object -FilterScript $whereFilter
 }
 
-foreach ($excludeFilter in $ExcludeTextFilter)
+foreach ($excludeFilter in $ExcludeTextFilters)
 {
   $ProgramPlan = $ProgramPlan | Where-Object Name -NotLike "$excludeFilter"
 }
@@ -56,17 +127,5 @@ if ($TotalSize -gt 1GB)
 
 $DisplayPlan | Out-Host
 "Total to be freed: $RoundedTotalSize $ScaleText" | Out-Host
-
-if ($PSBoundParameters.ContainsKey('ToCsvFile'))
-{
-  try
-  {
-    Write-Host "Exporting to $ToCsvFile"
-    $DisplayPlan | Export-Csv -Path $ToCsvFile -Force
-  } catch
-  {
-    Write-Warning "Failed to export to $ToCsvFile"
-  }
-}
 
 return $ProgramPlan

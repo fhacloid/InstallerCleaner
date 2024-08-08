@@ -1,3 +1,4 @@
+$DebugPreference = 'Continue'
 $ErrorActionPreference = "Stop"
 
 . .\Types.ps1
@@ -18,10 +19,9 @@ function Get-Programs
   $AllPrograms = New-Object System.Collections.Generic.List[Program]
 
   # Retrieve Programs informations
-  foreach ($HashItem in $Products.GetEnumerator())
-  {
-    $User = $HashItem.Key
-    $Products = $HashItem.Value
+  $Products.GetEnumerator() | ForEach-Object {
+    $User = $PSItem.Key
+    $Products = $PSItem.Value
 
     # Get Programs
     foreach ($ProductGUID in $Products)
@@ -43,27 +43,19 @@ function Get-Programs
           $ProgramData.LocalPackage = $InstallProperties.LocalPackage
           $ProgramData.PsPath = $InstallProperties.PSPath
           $ProgramData.PsParentPath = $InstallProperties.PSParentPath
-          $ProgramData.Size = $(Get-ItemPropertyValue -Path $InstallProperties.LocalPackage -Name "Length")
         }
 
         "Patches"
         {
           Write-Debug "Checking $PSItem for $HKey"
           $(Get-ItemProperty -Path "Registry::$HKey\$PSItem").AllPatches | ForEach-Object {
-            try
-            {
-              # Each PSItem represent a Patch ID
-              # We fetch the propeties in the registry
-              $Patch = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\${User}\Patches\${PSItem}"
-              $ProgramData.Patches += [Path]@{
-                ID = $PSItem
-                LocalPackage = $Patch.LocalPackage
-                PSPath = $Patch.PSPath
-                Size = $(Get-ItemPropertyValue -Path $Patch.LocalPackage -Name "Length")
-              }
-            } catch [System.Management.Automation.ItemNotFoundException]
-            {
-              # This means this software has no patch, so we do nothing
+            # Each PSItem represent a Patch ID
+            # We fetch the propeties in the registry
+            $Patch = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\${User}\Patches\${PSItem}"
+            $ProgramData.Patches += [Path]@{
+              ID = $PSItem
+              LocalPackage = $Patch.LocalPackage
+              PSPath = $Patch.PSPath
             }
           }
         }
@@ -73,8 +65,6 @@ function Get-Programs
         }
       }
 
-      # Calculate total patch size
-      $ProgramData.PatchSize = $($ProgramData.Patches | Measure-Object -Property Size -Sum).Sum
       $AllPrograms.Add($ProgramData)
     }
   }
@@ -82,3 +72,12 @@ function Get-Programs
   return $AllPrograms
 }
 
+# $ProgramsFilename = "./programs.csv"
+# Write-Host "Found $($AllPrograms.Count) programs on this system."
+# Write-Host "Writing output to $ProgramsFilename"
+# $AllPrograms | ConvertTo-Csv | Set-Content -Force -Path $ProgramsFilename
+# 
+# $PatchesFilename = "./patches.csv"
+# Write-Host "Found $($AllPatches.Count) patches on this system."
+# Write-Host "Writing output to $PatchesFilename"
+# $AllPatches | ConvertTo-Csv | Set-Content -Force -Path $PatchesFilename
