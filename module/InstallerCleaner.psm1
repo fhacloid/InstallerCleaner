@@ -233,7 +233,7 @@ function Get-CleanupPlan
   $DisplayPlan | Out-Host
   "Total to be freed: $RoundedTotalSize $ScaleText" | Out-Host
 
-  return $ProgramPlan
+  return ,$ProgramPlan
 }
 
 function Remove-InstallerProgram
@@ -257,7 +257,7 @@ function Remove-InstallerProgram
     {
       if ($PSCmdlet.ShouldProcess($Program.Name, "delete all patches for program"))
       {
-        Remove-InstallerProgramPatches -Program $Program -WhatIf:$WhatIfPreference -Confirm:$ConfirmPreference -Force:$Force
+        Remove-InstallerProgramPatches -Program $Program -Force:$Force
       }
     }
 
@@ -350,11 +350,16 @@ function Invoke-CleanupPlan
 {
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = "High")]
   param (
-    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-    [Program[]] $ProgramsToDelete,
+    [Parameter(ValueFromPipeline = $true)]
+    [Program[]] $ProgramsToDelete = @(),
 
     [Switch]$Force
   )
+
+  if ($ProgramsToDelete.Length -eq 0)
+  {
+    return
+  }
 
   # Define delete command to be real or not
   # depending on the -DryRun switch
@@ -372,7 +377,7 @@ function Invoke-CleanupPlan
   # Execute order 66
   foreach ($ProgramToDelete in $ProgramsToDelete)
   {
-    Remove-InstallerProgram -Program $ProgramToDelete -WhatIf:$WhatIfPreference -Confirm:$ConfirmPreference -Force:$Force
+    Remove-InstallerProgram -Program $ProgramToDelete -WhatIf:$WhatIfPreference -Force:$Force
   }
 }
 
@@ -391,14 +396,14 @@ function Remove-OrphanedLocalPackageRef
     $ConfirmPreference = 'None'
   }
 
-
   $OrphanedPackages = Get-ItemProperty "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\*\Products\*\InstallProperties" `
-  | Where-Object { -not $(Test-Path $_.LocalPackage) }
+  | Where-Object { $_.LocalPackage -ne "" -and $(-not $(Test-Path $_.LocalPackage)) }
 
   foreach ($OrphanedPackage in $OrphanedPackages)
   {
+    "Remove orphaned package $($OrphanedPackage.LocalPackage) from registry key $($OrphanedPackage.PSPath)" | Out-Host
     Set-ItemProperty -Path $OrphanedPackage.PSPath -Name "LocalPackage" -Value "" `
-      -WhatIf:$WhatIfPreference -Confirm:$ConfirmPreference -Force:$Force
+      -WhatIf:$WhatIfPreference -Force:$Force
   }
 }
 
@@ -434,7 +439,7 @@ function Remove-OrphanInstallerFiles
     }
   }
 
-  if ($WhatIfPreference = $True)
+  if ($WhatIfPreference -eq $True)
   {
     $OrphanFile `
     | Format-Table -AutoSize FullName,@{Label="Size (MB)"; Expression={[math]::Round($PSItem.Length / 1MB, 2)}} `
@@ -454,8 +459,8 @@ function Remove-OrphanInstallerFiles
 }
 
 Export-ModuleMember -Function @(
-  Invoke-CleanupPlan
-  Get-CleanupPlan
-  Remove-OrphanedLocalPackageRef
-  Remove-OrphanInstallerFiles
+  "Invoke-CleanupPlan"
+  "Get-CleanupPlan"
+  "Remove-OrphanedLocalPackageRef"
+  "Remove-OrphanInstallerFiles"
 )
